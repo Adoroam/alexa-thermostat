@@ -1,67 +1,54 @@
-// const rt = require('./rt-ctrl')
-const http = require('http')
-const querystring = require('querystring')
-
-// rt.tempHeat(thermostat.up, tempTest)
-var thermostatSend = (thermostat, postObj) => {
-  var postData = querystring.stringify(postObj, ',', ':')
-  var postOptions = {
-    host: thermostat,
-    path: '/tstat',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(postData)
-    }
-  }
-  var postReq = http.request(postOptions, function (res) {
-    res.setEncoding('utf8')
-    res.on('data', function (chunk) {
-      console.log('Response: ' + chunk)
-    })
-  })
-
-//  post the data
-  postReq.write(postData)
-  postReq.end()
-}
+const rt = require('./rt-ctrl')
 
 let thermostat = {
-  up: '192.168.2.215',
-  down: '192.168.2.223',
+  up: '192.168.2.223',
+  down: '192.168.2.215',
+  getAll: (thermostat) => {
+    rt.thermostatGet(thermostat, false)
+  },
+  getTemp: (thermostat) => {
+    rt.thermostatGet(thermostat, 'temp')
+  },
+  setHold: (thermostat, state) => {
+    var val = state
+    if (state === true) val = 1
+    if (state === false) val = 0
+    var postObj = { 'hold': val }
+    rt.thermostatSend(thermostat, postObj)
+  },
   tempHeat: (thermostat, target) => {
-    var postObj = { 't_heat': target }
-    thermostatSend(thermostat, postObj)
+    var postObj = { 'tmode': 1, 't_heat': target, 'hold': 1 }
+    rt.thermostatSend(thermostat, postObj)
+  },
+  tempCool: (thermostat, target) => {
+    var postObj = { 'tmode': 2, 't_cool': target, 'hold': 1 }
+    rt.thermostatSend(thermostat, postObj)
+  },
+  changeLED: (thermostat, LED) => {
+    var postObj = { 'energy_led': LED }
+    rt.thermostatSend(thermostat, postObj, '/tstat/led')
+    console.log(`changing led`)
+  },
+  sendMessage: (thermostat, message) => {
+    var postObj = { 'message': message }
+    rt.thermostatSend(thermostat, postObj, '/tstat/pma')
   }
 }
-thermostat.tempHeat(thermostat.up, 65)
-// tempHeat(thermostat.up, 65)
+let active = thermostat.down
+thermostat.getAll(active)
+
+// alexa time!
 
 /*
-var selected = null
-
-function urlString (thermostat) {
-return 'http://' + thermostat + '/tstat'
-}
-function getData(data){
-console.log(data)
-}
-var req = http.get(urlString(upstairs), (res) => {
-res.setEncoding('utf8')
-let rawData = ''
-res.on('data', (chunk) => {
-rawData += chunk
-})
-res.on('end', () => {
-try {
-let parsedData = JSON.parse(rawData)
-getData(parsedData)
-} catch (e) {
-console.log(e.message)
-}
-})
-}) */
-
+thermostat.setHold(active, true)
+thermostat.tempHeat(active, 60)
+thermostat.getLock(active)
+thermostat.setLock(active, 0)
+thermostat.tempCool(active, 58)
+thermostat.changeLED(active, 0)
+thermostat.sendMessage(active, 'hello world')
+thermostat.getAll(active)
+*/
 /*
 alexa ac
 -which ac would you like to change?
@@ -98,7 +85,7 @@ t_type_post: 0
 }
 */
 
-var chair = 141.71
+/* var chair = 141.71
 var parts = 86.58
 var rebates = 0
 var bank = 214.36
@@ -106,4 +93,4 @@ var partsHalf = parts / 2
 console.log('bank account - chair and half of donna\'s gift: ', bank - (chair + partsHalf))
 console.log("enya's half of the parts: ", partsHalf)
 console.log('rebates: ', rebates)
-console.log('chair and parts', chair + parts)
+console.log('chair and parts', chair + parts) */
